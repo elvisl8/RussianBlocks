@@ -252,6 +252,19 @@ h1 span { color: var(--accent); }
   .touch { display: grid; }
 }
 </style>
+<style>
+/* Phone layout: no title, fills the screen, bigger buttons */
+@media (max-width: 640px) {
+  body { padding-block: 8px 10px; padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px)); }
+  .top { display: none; }
+  .app { gap: 8px; }
+  .game { --well-w: clamp(170px, calc((100vh - 280px) / 2), 100%); --well-w: clamp(170px, calc((100dvh - 280px) / 2), 100%); }
+  .touch { width: 100%; max-width: none; gap: 8px; }
+  .touch button { height: 66px; font-size: 20px; border-radius: 10px; }
+  .touch button[data-act="hold"], .touch button[data-act="pause"], .touch button[data-act="drop"] { font-size: 15px; }
+}
+#board { touch-action: none; }
+</style>
 
 <main class="app">
   <header class="top">
@@ -276,7 +289,7 @@ h1 span { color: var(--accent); }
       <canvas id="board" aria-label="Playing field, 10 columns by 20 rows"></canvas>
       <div class="overlay" id="overlay">
         <h2 id="ovTitle">Russian Blocks</h2>
-        <p id="ovText">Fill every cell in a row to clear it. Reach the ceiling and it is over.</p>
+        <p id="ovText">Fill every row to clear it. On a phone: tap the field to rotate, drag to move, swipe down to soft drop, flick down to hard drop, swipe up to hold.</p>
         <button class="btn" id="ovBtn" type="button">Start</button>
       </div>
     </div>
@@ -655,6 +668,41 @@ h1 span { color: var(--accent); }
     btn.addEventListener('pointerleave', up);
     btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   });
+
+  /* ---------- touch gestures on the field ---------- */
+  var G = null;
+  boardCv.addEventListener('pointerdown', function (e) {
+    if (state !== 'playing' || e.pointerType === 'mouse') return;
+    e.preventDefault();
+    try { boardCv.setPointerCapture(e.pointerId); } catch (x) {}
+    G = { x0: e.clientX, y0: e.clientY, ax: e.clientX, t0: performance.now(), moved: false, soft: false, hold: false };
+  });
+  boardCv.addEventListener('pointermove', function (e) {
+    if (!G || state !== 'playing') return;
+    var cw = boardCv.clientWidth / COLS;
+    var dy = e.clientY - G.y0, adx = Math.abs(e.clientX - G.x0);
+    while (Math.abs(e.clientX - G.ax) >= cw) {
+      var d = e.clientX > G.ax ? 1 : -1;
+      move(d, 0); G.ax += d * cw; G.moved = true;
+    }
+    if (!G.soft && dy > cw * 1.5 && dy > adx * 1.5) { G.soft = true; held.down = true; G.moved = true; }
+    if (!G.hold && dy < -cw * 2 && -dy > adx * 1.5) { G.hold = true; G.moved = true; doHold(); }
+  });
+  function gEnd(e) {
+    if (!G) return;
+    var cw = boardCv.clientWidth / COLS, dt = performance.now() - G.t0;
+    var dy = e.clientY - G.y0, dist = Math.hypot(e.clientX - G.x0, dy);
+    var wasSoft = G.soft, wasMoved = G.moved;
+    G = null;
+    if (wasSoft) {
+      held.down = false;
+      if (state === 'playing' && dy > cw * 3.5 && dt < 300) hardDrop();
+    } else if (!wasMoved && dist < 12 && dt < 300 && state === 'playing') {
+      tryRotate(1);
+    }
+  }
+  boardCv.addEventListener('pointerup', gEnd);
+  boardCv.addEventListener('pointercancel', gEnd);
 
   /* ---------- drawing ---------- */
   var dpr = 1;
