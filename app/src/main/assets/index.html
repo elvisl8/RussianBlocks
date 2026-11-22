@@ -1,0 +1,802 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Russian Blocks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Russo+One&display=swap">
+<style>
+/* Layout: hold and stats on the left, the 10x20 well in the middle, next queue and key help on the right.
+   Under 640px the panels become one strip above the well and touch buttons sit below it. */
+:root {
+  --bg: #e9ecf1;
+  --surface: #ffffff;
+  --well: #f4f6f9;
+  --line: #cfd5e0;
+  --fg: #141a28;
+  --muted: #5d667b;
+  --accent: #d62f33;
+  --on-accent: #ffffff;
+  --grid: rgba(20, 26, 40, 0.07);
+  --scrim: rgba(233, 236, 241, 0.9);
+  --p-i: #2aa3bd;
+  --p-o: #d9a21b;
+  --p-t: #b84f7f;
+  --p-s: #4d9a3d;
+  --p-z: #d62f33;
+  --p-j: #3f6fd0;
+  --p-l: #e07a25;
+  --font-display: 'Russo One', 'Arial Black', Impact, sans-serif;
+  --font-body: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e121b;
+    --surface: #171d2b;
+    --well: #0b0f17;
+    --line: #2a3450;
+    --fg: #e8e9ee;
+    --muted: #8b93a8;
+    --accent: #ec4a4d;
+    --grid: rgba(255, 255, 255, 0.045);
+    --scrim: rgba(11, 15, 23, 0.88);
+    --p-i: #52c7de;
+    --p-o: #f0bd3f;
+    --p-t: #d46a9a;
+    --p-s: #6fbf5c;
+    --p-z: #ec4a4d;
+    --p-j: #5b8cf0;
+    --p-l: #f19040;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e121b;
+  --surface: #171d2b;
+  --well: #0b0f17;
+  --line: #2a3450;
+  --fg: #e8e9ee;
+  --muted: #8b93a8;
+  --accent: #ec4a4d;
+  --grid: rgba(255, 255, 255, 0.045);
+  --scrim: rgba(11, 15, 23, 0.88);
+  --p-i: #52c7de;
+  --p-o: #f0bd3f;
+  --p-t: #d46a9a;
+  --p-s: #6fbf5c;
+  --p-z: #ec4a4d;
+  --p-j: #5b8cf0;
+  --p-l: #f19040;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  padding-block: 20px 28px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+}
+.top { justify-self: stretch; }
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(28px, 6vw, 40px);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+h1 span { color: var(--accent); }
+.sub { margin: 6px 0 0; color: var(--muted); max-width: 60ch; }
+
+.game {
+  --well-w: clamp(200px, calc((100vh - 190px) / 2), 340px);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(130px, 170px) auto minmax(130px, 170px);
+  grid-template-areas: "hold well next" "stats well keys";
+  align-items: start;
+  justify-content: center;
+}
+.b-hold { grid-area: hold; }
+.stats { grid-area: stats; }
+.b-next { grid-area: next; }
+.keys { grid-area: keys; }
+.well-wrap { grid-area: well; }
+
+.box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 10px 12px 12px;
+  min-width: 0;
+}
+.box h2, .stats dt {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.box h2 small, .stats dt small {
+  display: block;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-size: 10px;
+}
+.box canvas { display: block; margin: 0 auto; }
+
+.stats {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+}
+.stats div { min-width: 0; }
+.stats dt { margin: 0; }
+.stats dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.keys { margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 12px; display: grid; gap: 5px; }
+.keys li { display: flex; justify-content: space-between; gap: 8px; }
+.keys kbd {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--fg);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.well-wrap {
+  position: relative;
+  width: var(--well-w);
+  border: 2px solid var(--fg);
+  background: var(--well);
+}
+#board { display: block; width: 100%; aspect-ratio: 1 / 2; }
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  text-align: center;
+  background: var(--scrim);
+}
+.overlay h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(22px, 5vw, 30px);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.overlay p { margin: 0; color: var(--muted); font-size: 13px; text-wrap: balance; }
+.btn {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--accent);
+  color: var(--on-accent);
+  border: 0;
+  padding: 12px 26px;
+  cursor: pointer;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:focus-visible, .touch button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+
+.touch {
+  display: none;
+  width: min(100%, 420px);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.touch button {
+  height: 52px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  touch-action: none;
+}
+.touch button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+@media (max-width: 640px) {
+  .game {
+    --well-w: clamp(170px, calc((100vh - 330px) / 2), 100%);
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "hold stats next" "well well well";
+    gap: 10px;
+  }
+  .well-wrap { justify-self: center; }
+  .keys { display: none; }
+  .stats { grid-template-columns: 1fr 1fr; gap: 6px 10px; padding: 8px 10px; }
+  .stats dd { font-size: 16px; }
+  .stats dt small { display: none; }
+  .box { padding: 8px; }
+  .box h2 small { display: none; }
+  .box h2 { margin-bottom: 6px; }
+}
+@media (max-width: 640px), (hover: none) and (pointer: coarse) {
+  .touch { display: grid; }
+}
+</style>
+
+<main class="app">
+  <header class="top">
+    <h1>Russian <span>Blocks</span></h1>
+    <p class="sub">Ten columns, twenty rows, seven pieces. The first version was written in Moscow in 1984.</p>
+  </header>
+
+  <section class="game" aria-label="Game">
+    <div class="box b-hold">
+      <h2>Hold <small>Запас</small></h2>
+      <canvas id="hold" aria-label="Held piece"></canvas>
+    </div>
+
+    <dl class="stats">
+      <div><dt>Score <small>Очки</small></dt><dd id="sScore">0</dd></div>
+      <div><dt>Level <small>Уровень</small></dt><dd id="sLevel">1</dd></div>
+      <div><dt>Lines <small>Линии</small></dt><dd id="sLines">0</dd></div>
+      <div><dt>Best <small>Рекорд</small></dt><dd id="sBest">0</dd></div>
+    </dl>
+
+    <div class="well-wrap">
+      <canvas id="board" aria-label="Playing field, 10 columns by 20 rows"></canvas>
+      <div class="overlay" id="overlay">
+        <h2 id="ovTitle">Russian Blocks</h2>
+        <p id="ovText">Fill every cell in a row to clear it. Reach the ceiling and it is over.</p>
+        <button class="btn" id="ovBtn" type="button">Start</button>
+      </div>
+    </div>
+
+    <div class="box b-next">
+      <h2>Next <small>Далее</small></h2>
+      <canvas id="next" aria-label="Upcoming pieces"></canvas>
+    </div>
+
+    <ul class="keys">
+      <li>Move <kbd>← →</kbd></li>
+      <li>Rotate <kbd>↑</kbd> <kbd>X</kbd></li>
+      <li>Rotate back <kbd>Z</kbd></li>
+      <li>Soft drop <kbd>↓</kbd></li>
+      <li>Hard drop <kbd>Space</kbd></li>
+      <li>Hold <kbd>C</kbd></li>
+      <li>Pause <kbd>P</kbd></li>
+    </ul>
+  </section>
+
+  <div class="touch" id="touch" aria-label="Touch controls">
+    <button type="button" data-act="hold">Hold</button>
+    <button type="button" data-act="rotccw" aria-label="Rotate back">↺</button>
+    <button type="button" data-act="rotcw" aria-label="Rotate">↻</button>
+    <button type="button" data-act="drop">Drop</button>
+    <button type="button" data-act="left" aria-label="Move left">←</button>
+    <button type="button" data-act="down" aria-label="Soft drop">↓</button>
+    <button type="button" data-act="right" aria-label="Move right">→</button>
+    <button type="button" data-act="pause">Pause</button>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var COLS = 10, ROWS = 20;
+  var TYPES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+  var SHAPES = {
+    I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+    O: [[1,1],[1,1]],
+    T: [[0,1,0],[1,1,1],[0,0,0]],
+    S: [[0,1,1],[1,1,0],[0,0,0]],
+    Z: [[1,1,0],[0,1,1],[0,0,0]],
+    J: [[1,0,0],[1,1,1],[0,0,0]],
+    L: [[0,0,1],[1,1,1],[0,0,0]]
+  };
+  var VARS = { I: '--p-i', O: '--p-o', T: '--p-t', S: '--p-s', Z: '--p-z', J: '--p-j', L: '--p-l' };
+  var SCORES = [0, 100, 300, 500, 800];
+  var KICKS = [[0,0],[-1,0],[1,0],[0,-1],[-2,0],[2,0],[-1,-1],[1,-1]];
+  var LOCK_MS = 500, MAX_LOCK_RESETS = 15;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var CLEAR_MS = reduceMotion ? 0 : 200;
+  var BEST_KEY = 'russian-blocks-best';
+
+  function $(id) { return document.getElementById(id); }
+  var boardCv = $('board'), bctx = boardCv.getContext('2d');
+  var holdCv = $('hold'), nextCv = $('next');
+  var overlay = $('overlay'), ovTitle = $('ovTitle'), ovText = $('ovText'), ovBtn = $('ovBtn');
+
+  /* ---------- colors from the page's theme tokens ---------- */
+  var C = {};
+  function loadColors() {
+    var cs = getComputedStyle(document.documentElement);
+    function v(n) { return cs.getPropertyValue(n).trim(); }
+    TYPES.forEach(function (t) { C[t] = v(VARS[t]); });
+    C.well = v('--well'); C.grid = v('--grid'); C.fg = v('--fg'); C.line = v('--line');
+  }
+  loadColors();
+  if (window.matchMedia) {
+    var mqDark = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mqDark.addEventListener) mqDark.addEventListener('change', function () { loadColors(); drawMinis(); });
+  }
+  new MutationObserver(function () { loadColors(); drawMinis(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  /* ---------- state ---------- */
+  var board, cur, queue, bag, holdType, canHold;
+  var score, lines, level, best = 0;
+  var state = 'ready'; // ready | playing | paused | over
+  var dropAcc = 0, lockAcc = 0, lockResets = 0, clearing = null;
+  var held = { left: false, right: false, down: false };
+  var das = { dir: 0, t: 0, rep: false };
+
+  try { best = parseInt(localStorage.getItem(BEST_KEY), 10) || 0; } catch (e) { best = 0; }
+
+  function emptyBoard() {
+    var b = [];
+    for (var y = 0; y < ROWS; y++) { b.push(new Array(COLS).fill(null)); }
+    return b;
+  }
+  function demoBoard() {
+    board = emptyBoard();
+    var rows = ['..........', '..T.......', '.TTT..OO..', 'ZZ.JJJOOSS'];
+    rows.forEach(function (str, i) {
+      for (var x = 0; x < COLS; x++) { var ch = str.charAt(x); board[ROWS - rows.length + i][x] = ch === '.' ? null : ch; }
+    });
+  }
+
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function nextType() {
+    if (!bag.length) bag = shuffle(TYPES.slice());
+    return bag.pop();
+  }
+  function takeNext() {
+    var t = queue.shift();
+    queue.push(nextType());
+    return t;
+  }
+
+  /* ---------- geometry ---------- */
+  function rotate(m, dir) {
+    var n = m.length, r = [];
+    for (var i = 0; i < n; i++) r.push(new Array(n).fill(0));
+    for (var y = 0; y < n; y++) {
+      for (var x = 0; x < n; x++) {
+        if (!m[y][x]) continue;
+        if (dir > 0) r[x][n - 1 - y] = 1; else r[n - 1 - x][y] = 1;
+      }
+    }
+    return r;
+  }
+  function collides(m, px, py) {
+    var n = m.length;
+    for (var r = 0; r < n; r++) {
+      for (var c = 0; c < n; c++) {
+        if (!m[r][c]) continue;
+        var x = px + c, y = py + r;
+        if (x < 0 || x >= COLS || y >= ROWS) return true;
+        if (y >= 0 && board[y][x]) return true;
+      }
+    }
+    return false;
+  }
+  function onGround() { return collides(cur.m, cur.x, cur.y + 1); }
+  function ghostY() {
+    var gy = cur.y;
+    while (!collides(cur.m, cur.x, gy + 1)) gy++;
+    return gy;
+  }
+  function resetLock() {
+    if (onGround() && lockResets < MAX_LOCK_RESETS) { lockAcc = 0; lockResets++; }
+  }
+
+  /* ---------- game flow ---------- */
+  function spawn(type) {
+    var m = SHAPES[type].map(function (r) { return r.slice(); });
+    cur = { type: type, m: m, x: Math.floor((COLS - m.length) / 2), y: type === 'I' ? -1 : 0 };
+    lockAcc = 0; lockResets = 0; dropAcc = 0;
+    drawMinis();
+    if (collides(cur.m, cur.x, cur.y)) gameOver();
+  }
+  function startGame() {
+    board = emptyBoard();
+    bag = []; queue = [];
+    for (var i = 0; i < 5; i++) queue.push(nextType());
+    holdType = null; canHold = true;
+    score = 0; lines = 0; level = 1; clearing = null;
+    held.left = held.right = held.down = false; das.dir = 0; das.t = 0; das.rep = false;
+    state = 'playing';
+    overlay.hidden = true;
+    spawn(takeNext());
+    updateHud();
+  }
+  function gameOver() {
+    state = 'over';
+    cur = null;
+    var record = score > best;
+    if (record) {
+      best = score;
+      try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {}
+    }
+    updateHud();
+    showOverlay('over', record);
+    drawMinis();
+  }
+  function togglePause() {
+    if (state === 'playing') {
+      state = 'paused';
+      held.left = held.right = held.down = false; das.dir = 0;
+      showOverlay('paused');
+    } else if (state === 'paused') {
+      state = 'playing';
+      overlay.hidden = true;
+    }
+  }
+  function showOverlay(kind, record) {
+    overlay.hidden = false;
+    if (kind === 'paused') {
+      ovTitle.textContent = 'Paused';
+      ovText.textContent = 'Press P or Resume to carry on.';
+      ovBtn.textContent = 'Resume';
+    } else if (kind === 'over') {
+      ovTitle.textContent = 'Game over';
+      ovText.textContent = 'Score ' + score.toLocaleString('en-US') + ', ' + lines + ' lines, level ' + level + (record ? '. New best.' : '.');
+      ovBtn.textContent = 'Play again';
+    } else {
+      ovTitle.textContent = 'Russian Blocks';
+      ovText.textContent = 'Fill every cell in a row to clear it. Reach the ceiling and it is over.';
+      ovBtn.textContent = 'Start';
+    }
+  }
+
+  function move(dx, dy) {
+    if (!cur) return false;
+    if (collides(cur.m, cur.x + dx, cur.y + dy)) return false;
+    cur.x += dx; cur.y += dy;
+    if (dx !== 0) resetLock();
+    return true;
+  }
+  function tryRotate(dir) {
+    if (!cur || cur.type === 'O') return;
+    var rm = rotate(cur.m, dir);
+    for (var i = 0; i < KICKS.length; i++) {
+      var kx = KICKS[i][0], ky = KICKS[i][1];
+      if (!collides(rm, cur.x + kx, cur.y + ky)) {
+        cur.m = rm; cur.x += kx; cur.y += ky;
+        resetLock();
+        return;
+      }
+    }
+  }
+  function hardDrop() {
+    if (!cur) return;
+    var gy = ghostY();
+    score += 2 * (gy - cur.y);
+    cur.y = gy;
+    lock();
+  }
+  function doHold() {
+    if (!cur || !canHold) return;
+    canHold = false;
+    var t = cur.type;
+    var swap = holdType;
+    holdType = t;
+    spawn(swap ? swap : takeNext());
+  }
+  function lock() {
+    var out = false;
+    for (var r = 0; r < cur.m.length; r++) {
+      for (var c = 0; c < cur.m.length; c++) {
+        if (!cur.m[r][c]) continue;
+        var x = cur.x + c, y = cur.y + r;
+        if (y < 0) out = true; else board[y][x] = cur.type;
+      }
+    }
+    cur = null;
+    if (out) { gameOver(); return; }
+    var full = [];
+    for (var yy = 0; yy < ROWS; yy++) {
+      if (board[yy].every(function (v) { return v; })) full.push(yy);
+    }
+    if (full.length) {
+      score += SCORES[full.length] * level;
+      lines += full.length;
+      level = Math.floor(lines / 10) + 1;
+      clearing = { rows: full, t: 0 };
+    } else {
+      spawn(takeNext());
+      canHold = true;
+    }
+    updateHud();
+  }
+  function finishClear() {
+    var rows = clearing.rows;
+    clearing = null;
+    board = board.filter(function (_, y) { return rows.indexOf(y) === -1; });
+    while (board.length < ROWS) board.unshift(new Array(COLS).fill(null));
+    spawn(takeNext());
+    canHold = true;
+  }
+  function gravity() { return Math.max(60, 800 * Math.pow(0.86, level - 1)); }
+
+  function update(dt) {
+    if (state !== 'playing') return;
+    if (clearing) {
+      clearing.t += dt;
+      if (clearing.t >= CLEAR_MS) finishClear();
+      return;
+    }
+    if (!cur) return;
+    if (das.dir) {
+      das.t += dt;
+      var thr = das.rep ? 50 : 150;
+      while (das.t >= thr) { das.t -= thr; das.rep = true; thr = 50; move(das.dir, 0); }
+    }
+    var interval = held.down ? Math.min(gravity(), 45) : gravity();
+    if (onGround()) {
+      lockAcc += dt; dropAcc = 0;
+      if (lockAcc >= (held.down ? 120 : LOCK_MS)) lock();
+    } else {
+      lockAcc = 0; dropAcc += dt;
+      while (dropAcc >= interval && !onGround()) {
+        dropAcc -= interval; cur.y++;
+        if (held.down) score += 1;
+      }
+      if (held.down) updateHud();
+    }
+  }
+
+  /* ---------- input ---------- */
+  function press(act) {
+    if (act === 'pause') { togglePause(); return; }
+    if (state !== 'playing') return;
+    if (act === 'left' || act === 'right') {
+      var dir = act === 'left' ? -1 : 1;
+      held[act] = true;
+      das.dir = dir; das.t = 0; das.rep = false;
+      move(dir, 0);
+    } else if (act === 'down') {
+      held.down = true;
+    } else if (act === 'rotcw') { tryRotate(1); }
+    else if (act === 'rotccw') { tryRotate(-1); }
+    else if (act === 'drop') { hardDrop(); }
+    else if (act === 'hold') { doHold(); }
+  }
+  function release(act) {
+    if (act === 'left' || act === 'right') {
+      held[act] = false;
+      var dir = act === 'left' ? -1 : 1;
+      if (das.dir === dir) {
+        das.dir = held.left ? -1 : (held.right ? 1 : 0);
+        das.t = 0; das.rep = false;
+      }
+    } else if (act === 'down') {
+      held.down = false;
+    }
+  }
+
+  var KEYMAP = {
+    ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'rotcw',
+    x: 'rotcw', X: 'rotcw', z: 'rotccw', Z: 'rotccw',
+    ' ': 'drop', c: 'hold', C: 'hold', Shift: 'hold',
+    p: 'pause', P: 'pause', Escape: 'pause'
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Enter' && (state === 'ready' || state === 'over')) { e.preventDefault(); startGame(); return; }
+    var act = KEYMAP[e.key];
+    if (!act) return;
+    e.preventDefault();
+    if (e.repeat) return;
+    press(act);
+  });
+  document.addEventListener('keyup', function (e) {
+    var act = KEYMAP[e.key];
+    if (act) release(act);
+  });
+  window.addEventListener('blur', function () {
+    if (state === 'playing') togglePause();
+    held.left = held.right = held.down = false; das.dir = 0;
+  });
+
+  ovBtn.addEventListener('click', function () {
+    if (state === 'paused') togglePause(); else startGame();
+    ovBtn.blur();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('#touch button'), function (btn) {
+    var act = btn.getAttribute('data-act');
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      btn.classList.add('on');
+      if ((state === 'ready' || state === 'over') && act !== 'pause') return;
+      press(act);
+    });
+    function up() { btn.classList.remove('on'); release(act); }
+    btn.addEventListener('pointerup', up);
+    btn.addEventListener('pointercancel', up);
+    btn.addEventListener('pointerleave', up);
+    btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  });
+
+  /* ---------- drawing ---------- */
+  var dpr = 1;
+  function drawCell(ctx, x, y, s, color, alpha) {
+    var e = Math.max(2, s * 0.12);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.fillRect(x + 0.5, y + 0.5, s - 1, s - 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.fillRect(x + 0.5, y + 0.5, s - 1, e);
+    ctx.fillRect(x + 0.5, y + 0.5, e, s - 1);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(x + 0.5, y + s - 0.5 - e, s - 1, e);
+    ctx.fillRect(x + s - 0.5 - e, y + 0.5, e, s - 1);
+    ctx.globalAlpha = 1;
+  }
+
+  function sizeBoard() {
+    dpr = window.devicePixelRatio || 1;
+    var w = boardCv.clientWidth;
+    if (w < 10) return;
+    boardCv.width = Math.round(w * dpr);
+    boardCv.height = Math.round(w * 2 * dpr);
+  }
+
+  function draw() {
+    var W = boardCv.clientWidth;
+    if (W < 10) return;
+    var H = W * 2, s = W / COLS;
+    bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    bctx.clearRect(0, 0, W, H);
+    bctx.fillStyle = C.well;
+    bctx.fillRect(0, 0, W, H);
+    bctx.strokeStyle = C.grid;
+    bctx.lineWidth = 1;
+    bctx.beginPath();
+    for (var gx = 1; gx < COLS; gx++) { bctx.moveTo(Math.round(gx * s) + 0.5, 0); bctx.lineTo(Math.round(gx * s) + 0.5, H); }
+    for (var gy = 1; gy < ROWS; gy++) { bctx.moveTo(0, Math.round(gy * s) + 0.5); bctx.lineTo(W, Math.round(gy * s) + 0.5); }
+    bctx.stroke();
+
+    var y, x;
+    for (y = 0; y < ROWS; y++) {
+      for (x = 0; x < COLS; x++) {
+        var t = board[y][x];
+        if (t) drawCell(bctx, x * s, y * s, s, C[t], 1);
+      }
+    }
+    if (clearing) {
+      var k = CLEAR_MS ? Math.min(1, clearing.t / CLEAR_MS) : 1;
+      bctx.fillStyle = C.fg;
+      bctx.globalAlpha = 0.9 * (1 - k * 0.5);
+      clearing.rows.forEach(function (ry) { bctx.fillRect(0, ry * s, W, s); });
+      bctx.globalAlpha = 1;
+    }
+    if (cur && state !== 'ready') {
+      var gyy = ghostY(), n = cur.m.length, r, c;
+      bctx.strokeStyle = C[cur.type];
+      bctx.lineWidth = 2;
+      bctx.globalAlpha = 0.6;
+      for (r = 0; r < n; r++) for (c = 0; c < n; c++) {
+        if (cur.m[r][c] && gyy + r >= 0) bctx.strokeRect((cur.x + c) * s + 2, (gyy + r) * s + 2, s - 4, s - 4);
+      }
+      bctx.globalAlpha = 1;
+      for (r = 0; r < n; r++) for (c = 0; c < n; c++) {
+        if (cur.m[r][c] && cur.y + r >= 0) drawCell(bctx, (cur.x + c) * s, (cur.y + r) * s, s, C[cur.type], 1);
+      }
+    }
+  }
+
+  var SLOT_W = 96, SLOT_H = 72, MINI = 16;
+  var mqNarrow = window.matchMedia ? window.matchMedia('(max-width: 640px)') : { matches: false };
+  var nextCount = mqNarrow.matches ? 1 : 3;
+  function setupMini(cv, slots) {
+    var w = SLOT_W, h = SLOT_H * slots;
+    cv.style.width = w + 'px'; cv.style.height = h + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  }
+  function setupMinis() {
+    dpr = window.devicePixelRatio || 1;
+    nextCount = mqNarrow.matches ? 1 : 3;
+    setupMini(holdCv, 1);
+    setupMini(nextCv, nextCount);
+    drawMinis();
+  }
+  function drawMini(cv, types, dim) {
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var h = SLOT_H * Math.max(1, types.length || 1);
+    ctx.clearRect(0, 0, SLOT_W, h);
+    ctx.fillStyle = C.well;
+    ctx.fillRect(0, 0, SLOT_W, h);
+    types.forEach(function (type, i) {
+      if (!type) return;
+      var m = SHAPES[type], n = m.length, minX = n, maxX = -1, minY = n, maxY = -1, r, c;
+      for (r = 0; r < n; r++) for (c = 0; c < n; c++) if (m[r][c]) {
+        if (c < minX) minX = c; if (c > maxX) maxX = c;
+        if (r < minY) minY = r; if (r > maxY) maxY = r;
+      }
+      var ox = (SLOT_W - (maxX - minX + 1) * MINI) / 2;
+      var oy = i * SLOT_H + (SLOT_H - (maxY - minY + 1) * MINI) / 2;
+      for (r = minY; r <= maxY; r++) for (c = minX; c <= maxX; c++) {
+        if (m[r][c]) drawCell(ctx, ox + (c - minX) * MINI, oy + (r - minY) * MINI, MINI, C[type], dim ? 0.35 : 1);
+      }
+    });
+  }
+  function drawMinis() {
+    drawMini(holdCv, [holdType], holdType && !canHold && state === 'playing');
+    var up = [];
+    if (queue) for (var i = 0; i < nextCount; i++) up.push(queue[i]);
+    drawMini(nextCv, up.length ? up : new Array(nextCount).fill(null), false);
+  }
+
+  function updateHud() {
+    $('sScore').textContent = (score || 0).toLocaleString('en-US');
+    $('sLevel').textContent = level || 1;
+    $('sLines').textContent = lines || 0;
+    $('sBest').textContent = Math.max(best, score || 0).toLocaleString('en-US');
+  }
+
+  /* ---------- boot ---------- */
+  demoBoard();
+  score = 0; lines = 0; level = 1; queue = null; holdType = null; canHold = true;
+  updateHud();
+  setupMinis();
+  sizeBoard();
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () { sizeBoard(); setupMinis(); }).observe(boardCv);
+  } else {
+    window.addEventListener('resize', function () { sizeBoard(); setupMinis(); });
+  }
+  if (mqNarrow.addEventListener) mqNarrow.addEventListener('change', setupMinis);
+
+  var last = performance.now();
+  function frame(now) {
+    var dt = Math.min(100, now - last);
+    last = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
